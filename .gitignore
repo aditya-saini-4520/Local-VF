@@ -1,0 +1,44 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+env/
+venv/
+.venv/
+*.log
+
+# Static & Media Files
+staticfiles/
+media/
+
+# Environment Variables (NEVER commit!)
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node / Frontend
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Testing
+.coverage
+htmlcov/
+
+# Build
+dist/
+build/
+*.egg-info/
+
+

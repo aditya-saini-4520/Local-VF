@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Vendor Dashboard{% endblock %}
+
+{% block content %}
+<section class="section vendor-dashboard">
+    <!-- HEADER -->
+    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>{{ vendor.name|default:"Vendor Dashboard" }}</h1>
+            <p>Manage your business presence on Local VFC</p>
+        </div>
+        {% if vendor %}
+            <form method="post" action="{% url 'vendors:vendor_toggle_open' vendor.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary">
+                    {% if vendor.is_open %}🔴 Set as closed{% else %}🟢 Set as open{% endif %}
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if vendor %}
+        <!-- ANIMATED STAT CARDS -->
+        <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+            <div class="stat-card animated-counter" style="padding: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">👁️</div>
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Total Views</h3>
+                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">{{ views_count }}</div>
+            </div>
+
+            <div class="stat-card animated-counter" style="padding: 1.5rem; background: linear-gradient(135deg, #f093fb, #f5576c); color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">🖱️</div>
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Total Clicks</h3>
+                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">{{ clicks_count }}</div>
+            </div>
+
+            <div class="stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">⭐</div>
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Avg Rating</h3>
+                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">
+                    {{ average_rating|floatformat:1|default:"N/A" }}
+                    {% if review_count %}
+                        <span style="font-size: 0.8rem;"> ({{ review_count }})</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="stat-card" style="padding: 1.5rem; background: linear-gradient(135deg, #fa709a, #fee140); color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">💬</div>
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Total Reviews</h3>
+                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">{{ review_count }}</div>
+            </div>
+        </div>
+
+        <!-- 7-DAY CHART -->
+        <div style="background: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+            <h3>7-Day Analytics</h3>
+            <canvas id="analytics-chart" style="max-height: 300px;"></canvas>
+        </div>
+
+        <!-- PROFILE COMPLETION -->
+        <div style="background: #f9fafb; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 2rem; border-left: 4px solid #667eea;">
+            <h3>Profile Completion</h3>
+            <div style="background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 1rem;">
+                <div style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: {{ profile_completion_percent }}%; transition: width 0.3s;"></div>
+            </div>
+            <p style="margin: 0; color: #666;">{{ profile_completion_percent }}% Complete - {{ profile_complete }}/6 fields</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{% if vendor.name %}✅{% else %}⭕{% endif %}</span>
+                    <span>Business Name</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{% if vendor.address %}✅{% else %}⭕{% endif %}</span>
+                    <span>Address</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{% if vendor.phone %}✅{% else %}⭕{% endif %}</span>
+                    <span>Phone</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{% if vendor.photos.exists %}✅{% else %}⭕{% endif %}</span>
+                    <span>Photos</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{% if vendor.working_hours %}✅{% else %}⭕{% endif %}</span>
+                    <span>Hours</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>{% if vendor.services.exists %}✅{% else %}⭕{% endif %}</span>
+                    <span>Services</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SERVICES MANAGEMENT -->
+        <div style="margin-bottom: 2rem;">
+            <h3>Services</h3>
+            <div class="services-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                {% for service in services %}
+                    <div class="service-item" style="padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 0.5rem 0;">{{ service.name }}</h4>
+                            <p style="margin: 0; font-size: 0.9rem; color: #666;">{{ service.description }}</p>
+                            <p style="margin: 0.5rem 0 0 0; font-weight: bold; color: #667eea;">₹{{ service.price }}</p>
+                        </div>
+                        <button class="btn-delete-service" data-service-id="{{ service.id }}" style="padding: 0.25rem 0.5rem; background: #fee2e2; color: #991b1b; border: none; border-radius: 0.25rem; cursor: pointer;">✕</button>
+                    </div>
+                {% empty %}
+                    <p class="muted-text">No services added yet.</p>
+                {% endfor %}
+            </div>
+            
+            <form id="add-service-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <input type="text" id="service-name" placeholder="Service name" required style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.25rem;">
+                <input type="number" id="service-price" placeholder="Price" step="0.01" required style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.25rem;">
+                <textarea id="service-description" placeholder="Description" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.25rem;"></textarea>
+                <button type="submit" class="btn-primary" style="min-height: 38px;">+ Add Service</button>
+            </form>
+        </div>
+
+        <!-- RECENT REVIEWS -->
+        <div style="margin-bottom: 2rem;">
+            <h3>Recent Reviews</h3>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for review in recent_reviews %}
+                    <div style="padding: 1rem; background: #f9fafb; border-radius: 0.5rem; border-left: 4px solid #667eea;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div>
+                                <strong>{{ review.customer.username }}</strong>
+                                <div style="margin-top: 0.25rem;">
+                                    {% for i in "12345" %}
+                                        <span style="color: {% if i|add:0 <= review.rating %}#f59e0b{% else %}#d1d5db{% endif %};">★</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <span style="color: #999; font-size: 0.85rem;">{{ review.created_at|timesince }} ago</span>
+                        </div>
+                        <p style="margin: 0; color: #666; line-height: 1.5;">{{ review.comment|truncatewords:50 }}</p>
+                    </div>
+                {% empty %}
+                    <p class="muted-text">No reviews yet. Keep improving your service!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- QR CODE SECTION -->
+        <div style="background: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+            <h3>QR Code</h3>
+            <p style="color: #666; margin-bottom: 1rem;">Share your shop with this QR code</p>
+            <div style="margin-bottom: 1rem;">
+                <img src="{% url 'vendors:vendor_qr' vendor.id %}" alt="QR Code" style="width: 200px; height: 200px; border: 2px solid #e5e7eb; border-radius: 0.5rem;">
+            </div>
+            <a href="{% url 'vendors:vendor_qr' vendor.id %}" download class="btn-primary">⬇️ Download QR Code</a>
+        </div>
+
+    {% else %}
+        <div style="text-align: center; padding: 3rem 1rem;">
+            <p class="muted-text">You do not have a vendor profile yet.</p>
+            <a href="{% url 'vendors:vendor_register' %}" class="btn-primary">Create Your Vendor Profile</a>
+        </div>
+    {% endif %}
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+// Chart.js initialization
+document.addEventListener('DOMContentLoaded', function() {
+    const analytics = {{ seven_day_analytics|safe }};
+    const ctx = document.getElementById('analytics-chart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Object.keys(analytics),
+                datasets: [{
+                    label: 'Profile Views',
+                    data: Object.values(analytics),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+    
+    // Animate counters
+    document.querySelectorAll('.animated-counter').forEach(card => {
+        const value = card.querySelector('.stat-value').textContent;
+        animateCounter(card.querySelector('.stat-value'), parseInt(value), 1000);
+    });
+    
+    // Add service form
+    document.getElementById('add-service-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const name = document.getElementById('service-name').value;
+        const price = document.getElementById('service-price').value;
+        const description = document.getElementById('service-description').value;
+        
+        fetch('/vendors/{{ vendor.id }}/add-service/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({ name, price, description })
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    });
+});
+
+function animateCounter(element, target, duration) {
+    let current = 0;
+    const increment = target / (duration / 16);
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = target;
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current);
+        }
+    }, 16);
+}
+</script>
+
+{% endblock %}
+

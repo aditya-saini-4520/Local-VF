@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}Your Dashboard{% endblock %}
+
+{% block content %}
+<section class="section customer-dashboard">
+    <!-- HEADER -->
+    <div class="section-header">
+        <h1>Welcome, {{ request.user.username }}! 👋</h1>
+        <p>Your personalized local vendor discovery dashboard</p>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div style="padding: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">❤️</div>
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Favourite Vendors</h3>
+            <div style="font-size: 2rem; font-weight: bold;">{{ favourite_vendors|length }}</div>
+        </div>
+
+        <div style="padding: 1.5rem; background: linear-gradient(135deg, #f093fb, #f5576c); color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">⭐</div>
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Reviews Given</h3>
+            <div style="font-size: 2rem; font-weight: bold;">{{ recent_reviews|length }}</div>
+        </div>
+
+        <div style="padding: 1.5rem; background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; border-radius: 0.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👁️</div>
+            <h3 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; opacity: 0.9;">Recently Viewed</h3>
+            <div style="font-size: 2rem; font-weight: bold;">{{ recently_viewed_vendors|length }}</div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT GRID -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <div>
+            <!-- FAVOURITE VENDORS SECTION -->
+            <div style="margin-bottom: 3rem;">
+                <h2>❤️ Your Favourite Vendors</h2>
+                {% if favourite_vendors %}
+                    <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                        {% for vendor in favourite_vendors %}
+                            <article class="vendor-card hover-lift" style="position: relative;">
+                                {% if vendor.is_open_now %}
+                                    <span class="badge badge-open" style="position: absolute; top: 0.5rem; right: 0.5rem;">Open</span>
+                                {% else %}
+                                    <span class="badge badge-closed" style="position: absolute; top: 0.5rem; right: 0.5rem;">Closed</span>
+                                {% endif %}
+                                
+                                <h3 style="margin: 0 0 0.5rem 0;">{{ vendor.name }}</h3>
+                                
+                                {% if vendor.category %}
+                                    <span style="display: inline-block; padding: 0.25rem 0.75rem; background: #f0f0f0; border-radius: 1rem; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                                        {{ vendor.category.icon }} {{ vendor.category.name }}
+                                    </span>
+                                {% endif %}
+                                
+                                <p style="margin: 0.5rem 0; color: #666; font-size: 0.9rem;">📍 {{ vendor.address|truncatewords:5 }}</p>
+                                
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                                    <a href="{% url 'vendors:vendor_detail_page' vendor.id %}" class="btn-ghost small" style="flex: 1;">View</a>
+                                    <button class="btn-remove-favourite" data-vendor-id="{{ vendor.id }}" style="padding: 0.5rem; background: #fee2e2; color: #991b1b; border: none; border-radius: 0.25rem; cursor: pointer; flex: 0.3;">✕</button>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="padding: 2rem; text-align: center; background: #f9fafb; border-radius: 0.5rem;">
+                        <p style="color: #666; margin: 0;">No favourite vendors yet. <a href="{% url 'vendors:vendor_list_page' %}" style="color: #667eea;">Start exploring →</a></p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- RECENT REVIEWS SECTION -->
+            <div style="margin-bottom: 3rem;">
+                <h2>⭐ Your Reviews</h2>
+                {% if recent_reviews %}
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for review in recent_reviews %}
+                            <div style="padding: 1.5rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; background: #f9fafb;">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                    <div>
+                                        <a href="{% url 'vendors:vendor_detail_page' review.vendor.id %}" style="font-weight: bold; color: #667eea; text-decoration: none;">{{ review.vendor.name }}</a>
+                                        <div style="margin-top: 0.25rem;">
+                                            {% for i in "12345" %}
+                                                <span style="color: {% if i|add:0 <= review.rating %}#f59e0b{% else %}#d1d5db{% endif %};">★</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <span style="color: #999; font-size: 0.85rem;">{{ review.created_at|date:"M j, Y" }}</span>
+                                </div>
+                                <p style="margin: 0; color: #333; line-height: 1.6;">{{ review.comment }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="padding: 2rem; text-align: center; background: #f9fafb; border-radius: 0.5rem;">
+                        <p style="color: #666; margin: 0;">Write your first review from any vendor profile. <a href="{% url 'vendors:vendor_list_page' %}" style="color: #667eea;">Pick a vendor →</a></p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- RECENTLY VIEWED SECTION -->
+            {% if recently_viewed_vendors %}
+                <div>
+                    <h2>👁️ Recently Viewed</h2>
+                    <div class="card-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+                        {% for vendor in recently_viewed_vendors %}
+                            <a href="{% url 'vendors:vendor_detail_page' vendor.id %}" style="padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem; text-decoration: none; color: inherit; transition: all 0.2s; display: block;" onmouseover="this.style.borderColor='#667eea'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'" onmouseout="this.style.borderColor='#e5e7eb'; this.style.boxShadow='none'">
+                                <strong>{{ vendor.name }}</strong>
+                                {% if vendor.category %}
+                                    <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 0.85rem;">{{ vendor.category.icon }} {{ vendor.category.name }}</p>
+                                {% endif %}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- SIDEBAR -->
+        <div>
+            <!-- SEARCH HISTORY -->
+            {% if search_history %}
+                <div style="background: white; padding: 1.5rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem;">
+                    <h3>🔍 Search History</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for search in search_history %}
+                            <a href="{% url 'vendors:vendor_list_page' %}?q={{ search|urlencode }}" style="padding: 0.75rem; background: #f9fafb; border-radius: 0.25rem; text-decoration: none; color: #667eea; font-size: 0.9rem;">{{ search }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- PROFILE SECTION -->
+            <div class="profile-card" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <div style="flex-shrink: 0; width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.5rem; overflow: hidden;">
+                        {% if avatar %}
+                            <img src="{{ avatar.url }}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            {{ username|first|upper }}
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0 0 0.25rem 0; color: #ffffff;">{{ username }}</h3>
+                        <p style="margin: 0; color: #cbd5e1; font-size: 0.9rem;">
+                            <span style="display: inline-block; padding: 0.25rem 0.75rem; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border-radius: 1rem; font-size: 0.85rem;">Customer</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- DISPLAY MODE -->
+                <div id="profile-display-mode">
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">📧 Email</label>
+                        <p style="margin: 0; color: #ffffff;">{{ email }}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">📍 Location</label>
+                        <p style="margin: 0; color: #ffffff;">{{ location|default:"Not set" }}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">📞 Phone</label>
+                        <p style="margin: 0; color: #ffffff;">{{ phone|default:"Not set" }}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">🗓️ Member since</label>
+                        <p style="margin: 0; color: #ffffff;">{{ user.date_joined|date:"M Y" }}</p>
+                    </div>
+                    
+                    <button class="btn-primary" id="edit-profile-btn" style="width: 100%; margin-top: 0.5rem; cursor: pointer;">✏️ Edit Profile</button>
+                </div>
+
+                <!-- EDIT MODE -->
+                <div id="profile-edit-mode" style="display: none;">
+                    <form id="profile-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% csrf_token %}
+                        
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">📧 Email</label>
+                            <input type="email" name="email" value="{{ request.user.email }}" placeholder="your@email.com" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 0.25rem; font-size: 0.9rem; box-sizing: border-box; background: #1e1e2e; color: #cbd5e1;">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">📍 Location</label>
+                            <input type="text" name="location" id="location-input" value="{{ location }}" placeholder="e.g., New York, NY" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 0.25rem; font-size: 0.9rem; box-sizing: border-box; background: #1e1e2e; color: #cbd5e1;">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">📞 Phone</label>
+                            <input type="tel" name="phone" id="phone-input" value="{{ phone }}" placeholder="e.g., +1 (555) 000-0000" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 0.25rem; font-size: 0.9rem; box-sizing: border-box; background: #1e1e2e; color: #cbd5e1;">
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 0.25rem;">📸 Profile Photo</label>
+                            <input type="file" name="avatar" id="avatar-input" accept="image/*" style="width: 100%; padding: 0.5rem; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 0.25rem; font-size: 0.9rem; box-sizing: border-box; background: #1e1e2e; color: #cbd5e1;">
+                            <p style="margin: 0.25rem 0 0 0; font-size: 0.8rem; color: #9ca3af;">Max 5MB, JPG/PNG</p>
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                            <button type="submit" class="btn-primary" style="flex: 1; cursor: pointer;">💾 Save Changes</button>
+                            <button type="button" id="cancel-edit-btn" class="btn-ghost" style="flex: 1; cursor: pointer; border: 1px solid rgba(99, 102, 241, 0.3); background: #1e1e2e; color: #cbd5e1;">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- PROFILE COMPLETION -->
+            <div class="completion-card" style="padding: 1.5rem; border-left: 4px solid #667eea;">
+                <h3 style="margin-top: 0; color: #ffffff;">Profile Completion</h3>
+                <div style="background: #1e1e2e; height: 10px; border-radius: 4px; overflow: hidden; margin-bottom: 1rem;">
+                    <div id="completion-bar" style="background: linear-gradient(90deg, #667eea, #764ba2); height: 100%; width: {{ profile_completion }}%; transition: width 0.5s ease;">
+                    </div>
+                </div>
+                <p style="margin: 0 0 1rem 0; font-size: 1rem; font-weight: bold; color: #a5b4fc;">{{ profile_completion }}% Complete</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; {% if username %}color: #10b981;{% else %}color: #cbd5e1;{% endif %}">
+                        <span>{% if username %}✅{% else %}⬜{% endif %}</span>
+                        <span>Username set</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; {% if email %}color: #10b981;{% else %}color: #cbd5e1;{% endif %}">
+                        <span>{% if email %}✅{% else %}⬜{% endif %}</span>
+                        <span>Email set</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; {% if phone %}color: #10b981;{% else %}color: #cbd5e1;{% endif %}" class="completion-item">
+                        <span class="checkbox">{% if phone %}✅{% else %}⬜{% endif %}</span>
+                        <span>Phone number</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; {% if location %}color: #10b981;{% else %}color: #cbd5e1;{% endif %}" class="completion-item">
+                        <span class="checkbox">{% if location %}✅{% else %}⬜{% endif %}</span>
+                        <span>Location</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; {% if avatar %}color: #10b981;{% else %}color: #cbd5e1;{% endif %}" class="completion-item">
+                        <span class="checkbox">{% if avatar %}✅{% else %}⬜{% endif %}</span>
+                        <span>Profile photo</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editBtn = document.getElementById('edit-profile-btn');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    const displayMode = document.getElementById('profile-display-mode');
+    const editMode = document.getElementById('profile-edit-mode');
+    const profileForm = document.getElementById('profile-form');
+    
+    // Toggle edit mode
+    editBtn.addEventListener('click', function() {
+        displayMode.style.display = 'none';
+        editMode.style.display = 'block';
+    });
+    
+    cancelBtn.addEventListener('click', function() {
+        displayMode.style.display = 'block';
+        editMode.style.display = 'none';
+    });
+    
+    // Handle form submission
+    profileForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        
+        try {
+            const response = await fetch('{% url "accounts:update_profile" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Show toast notification
+                showToast(data.message, 'success');
+                
+                // Reload page after 1.5 seconds
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showToast('Error: ' + (data.message || 'Failed to update profile'), 'error');
+            }
+        } catch (error) {
+            showToast('Error: ' + error.message, 'error');
+        }
+    });
+    
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: ${type === 'success' ? '#10b981' : '#ef4444'};
+            color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+            max-width: 400px;
+            font-size: 0.9rem;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-out forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    // Remove from favourites
+    document.querySelectorAll('.btn-remove-favourite').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const vendorId = this.dataset.vendorId;
+            fetch(`/vendors/${vendorId}/toggle-favourite/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '' }
+            }).then(r => r.json()).then(data => {
+                if (data.success) location.reload();
+            });
+        });
+    });
+});
+</script>
+
+<style>
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .customer-dashboard > div:nth-child(3) {
+            grid-template-columns: 1fr !important;
+        }
+        
+        #edit-profile-btn, #profile-form input, #profile-form button {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        @media (max-width: 640px) {
+            .btn-primary, .btn-ghost {
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
+        }
+    }
+</style>
+
+{% endblock %}
+

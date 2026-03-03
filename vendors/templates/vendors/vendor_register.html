@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}Register your shop{% endblock %}
+
+{% block content %}
+{% if request.GET.success %}
+    <div id="confetti-flag"></div>
+{% endif %}
+<section class="section">
+    <h2>Register your vendor profile</h2>
+    {% if errors %}
+        <div class="messages">
+            {% for error in errors %}
+                <div class="message message-error">{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="wizard">
+            <div class="wizard-steps">
+                <div class="wizard-step active">1. Basic info</div>
+                <div class="wizard-step">2. Location</div>
+                <div class="wizard-step">3. Photos</div>
+                <div class="wizard-step">4. Working hours</div>
+            </div>
+            <div class="wizard-progress">
+                <div class="wizard-progress-bar"></div>
+            </div>
+
+            <div class="wizard-step-pane active">
+                <div class="form-row">
+                    <label class="label">Name</label>
+                    <input type="text" name="name" class="input" required>
+                </div>
+                <div class="form-row">
+                    <label class="label">Category</label>
+                    <select name="category" class="select-full">
+                        <option value="">Select category</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label class="label">Description</label>
+                    <textarea name="description" class="textarea" placeholder="What makes your shop special?"></textarea>
+                </div>
+            </div>
+
+            <div class="wizard-step-pane">
+                <div class="form-row">
+                    <label class="label">Address</label>
+                    <input type="text" name="address" class="input" required>
+                </div>
+                <div class="form-row">
+                    <label class="label">Location on map</label>
+                    <div id="location-map" class="mini-map" data-lat="" data-lon=""></div>
+                    <input type="hidden" name="latitude" id="latitude">
+                    <input type="hidden" name="longitude" id="longitude">
+                </div>
+                <div class="form-row">
+                    <label class="label">Contact phone</label>
+                    <input type="text" name="phone" class="input">
+                </div>
+                <div class="form-row">
+                    <label class="label">Contact email</label>
+                    <input type="email" name="email" class="input">
+                </div>
+                <div class="form-row">
+                    <label class="label">Website</label>
+                    <input type="url" name="website" class="input">
+                </div>
+            </div>
+
+            <div class="wizard-step-pane">
+                <div class="form-row">
+                    <label class="label">Photos (up to 5)</label>
+                    <div class="dropzone" id="photo-dropzone">
+                        Drop images here or click to upload.
+                        <input type="file" name="photos" id="photos-input" accept="image/*" multiple style="display:none">
+                    </div>
+                </div>
+            </div>
+
+            <div class="wizard-step-pane">
+                <input type="hidden" name="working_hours" id="working-hours">
+                <div class="day-hours-grid" id="day-grid">
+                    {% for day in "Mon,Tue,Wed,Thu,Fri,Sat,Sun"|split:"," %}
+                        <div class="day-card" data-day="{{ day }}">
+                            <div class="form-row">
+                                <label class="label">{{ day }}</label>
+                            </div>
+                            <div class="form-row">
+                                <input type="time" class="input" data-open>
+                            </div>
+                            <div class="form-row">
+                                <input type="time" class="input" data-close>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;margin-top:1rem;">
+                <button type="button" class="btn-outline" data-wizard-prev>Back</button>
+                <button type="button" class="btn-primary" data-wizard-next>Next</button>
+            </div>
+        </div>
+    </form>
+</section>
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const dayGrid = document.getElementById("day-grid");
+    const workingHoursInput = document.getElementById("working-hours");
+    if (dayGrid && workingHoursInput) {
+        function syncWorkingHours() {
+            const data = {};
+            dayGrid.querySelectorAll(".day-card").forEach(card => {
+                const day = card.dataset.day;
+                const open = card.querySelector("[data-open]").value;
+                const close = card.querySelector("[data-close]").value;
+                if (open && close) {
+                    data[day] = {open, close};
+                    card.classList.add("active");
+                } else {
+                    card.classList.remove("active");
+                }
+            });
+            workingHoursInput.value = JSON.stringify(data);
+        }
+        dayGrid.addEventListener("change", syncWorkingHours);
+        syncWorkingHours();
+    }
+
+    const drop = document.getElementById("photo-dropzone");
+    const input = document.getElementById("photos-input");
+    if (drop && input) {
+        drop.addEventListener("click", () => input.click());
+        drop.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            drop.classList.add("active");
+        });
+        drop.addEventListener("dragleave", () => drop.classList.remove("active"));
+        drop.addEventListener("drop", (e) => {
+            e.preventDefault();
+            drop.classList.remove("active");
+            input.files = e.dataTransfer.files;
+        });
+    }
+
+    const locMap = document.getElementById("location-map");
+    if (locMap && window.L) {
+        const map = L.map("location-map").setView([20, 0], 2);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+        }).addTo(map);
+        let marker = null;
+        map.on("click", function(e) {
+            const { lat, lng } = e.latlng;
+            if (!marker) {
+                marker = L.marker([lat, lng]).addTo(map);
+            } else {
+                marker.setLatLng([lat, lng]);
+            }
+            document.getElementById("latitude").value = lat;
+            document.getElementById("longitude").value = lng;
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
+

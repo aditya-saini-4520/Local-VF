@@ -1,0 +1,316 @@
+
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}{{ vendor.name }} - Local VFC{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div class="breadcrumb" style="padding: 1rem 2rem;">
+    <a href="{% url 'home' %}">Home</a> / 
+    <a href="{% url 'vendors:vendor_list_page' %}">Vendors</a> / 
+    <span>{{ vendor.name }}</span>
+</div>
+
+<!-- HERO BANNER -->
+<div class="vendor-hero" style="position: relative; height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); overflow: hidden;">
+    {% if photos.0 %}
+        <img src="{{ photos.0.image.url }}" alt="{{ vendor.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+    {% endif %}
+    <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.3);"></div>
+    <div style="position: absolute; bottom: 2rem; left: 2rem; color: white; z-index: 10;">
+        <h1 style="margin:0; font-size: 2.5rem;">{{ vendor.name }}</h1>
+        {% if vendor.category %}
+            <span style="font-size: 1.1rem;">{{ vendor.category.icon }} {{ vendor.category.name }}</span>
+        {% endif %}
+        {% if vendor.is_verified %}
+            <span style="background: #4ade80; padding: 0.25rem 0.5rem; border-radius: 0.25rem; display: inline-block; margin-top: 0.5rem;">✅ Verified</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- CONTACT & INFO SECTION -->
+<section class="section" style="margin-top: 2rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+        <!-- Contact Buttons -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            {% if vendor.phone %}
+                <a href="tel:{{ vendor.phone }}" class="btn-primary" style="flex: 1; text-align: center;">📞 Call</a>
+            {% endif %}
+            {% if vendor.phone %}
+                <a href="https://wa.me/{{ vendor.phone|slice:':' }}" target="_blank" class="btn-primary" style="flex: 1; text-align: center;">💬 WhatsApp</a>
+            {% endif %}
+            {% if vendor.website %}
+                <a href="{{ vendor.website }}" target="_blank" class="btn-primary" style="flex: 1; text-align: center;">🌐 Website</a>
+            {% endif %}
+            <button class="btn-favourite-big" data-vendor-id="{{ vendor.id }}" style="padding: 0.5rem 1rem;">
+                {% if is_favourite %}♥️{% else %}♡{% endif %} Favourite
+            </button>
+        </div>
+
+        <!-- Status -->
+        <div>
+            {% if vendor.is_open_now %}
+                <span class="badge badge-open" style="font-size: 1.1rem;">✓ Open now</span>
+            {% else %}
+                <span class="badge badge-closed" style="font-size: 1.1rem;">✗ Closed</span>
+            {% endif %}
+        </div>
+
+        <!-- Report Button -->
+        <div>
+            <a href="mailto:support@localvfc.com?subject=Report:%20{{ vendor.name }}" class="btn-outline" style="width: 100%;">
+                🚩 Report vendor
+            </a>
+        </div>
+    </div>
+
+    <!-- LOCATION MAP SECTION -->
+    <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(99,102,241,0.05); border-radius: 12px; border: 1px solid rgba(99,102,241,0.1);">
+        <h3 style="margin-top: 0;">📍 Location on Map</h3>
+        {% if vendor.latitude and vendor.longitude %}
+            <div id="vendor-detail-map" style="width:100%; height:400px; border-radius:8px; overflow:hidden; margin-top:1rem;"></div>
+        {% else %}
+            <p class="muted-text">Location coordinates not available</p>
+        {% endif %}
+    </div>
+
+    <!-- MAIN CONTENT GRID -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <div>
+            <!-- GALLERY SECTION -->
+            <div class="gallery-section">
+                <h3>Gallery</h3>
+                {% if photos %}
+                    <div class="gallery-main">
+                        <img id="main-gallery-image" src="{{ photos.0.image.url }}" alt="Gallery" style="width: 100%; height: 400px; object-fit: cover; border-radius: 0.5rem; cursor: pointer;">
+                    </div>
+                    <div class="gallery-thumbnails" style="display: flex; gap: 0.5rem; margin-top: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                        {% for photo in photos %}
+                            <img src="{{ photo.image.url }}" alt="Thumbnail" class="gallery-thumb" style="width: 80px; height: 80px; object-fit: cover; border-radius: 0.25rem; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;" onclick="document.getElementById('main-gallery-image').src = this.src; this.style.borderColor = '#667eea';">
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="muted-text">No photos available yet.</div>
+                {% endif %}
+            </div>
+
+            <!-- SERVICES SECTION -->
+            <div style="margin-top: 3rem;">
+                <h3>Services</h3>
+                {% if services %}
+                    <div class="services-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+                        {% for service in services %}
+                            <div class="service-card" style="padding: 1rem; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
+                                <h4 style="margin: 0 0 0.5rem 0;">{{ service.name }}</h4>
+                                <p style="margin: 0; color: #666; font-size: 0.9rem;">{{ service.description }}</p>
+                                <p style="margin: 0.5rem 0 0 0; font-size: 1.25rem; color: #667eea; font-weight: bold;">₹{{ service.price }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="muted-text">No services added yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- REVIEWS SECTION -->
+            <div style="margin-top: 3rem;">
+                <h3>Customer Reviews</h3>
+                
+                <!-- RATING BREAKDOWN -->
+                {% if reviews %}
+                    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; margin-bottom: 2rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; font-weight: bold;">
+                                {% if average_rating %}
+                                    {{ average_rating|floatformat:1 }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                            <div class="stars" style="font-size: 1.5rem; justify-content: center;">
+                                {% if average_rating %}
+                                    {% for i in "12345" %}
+                                        <span class="star {% if i|add:0 <= average_rating %}filled{% endif %}">★</span>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            <p style="margin: 0.5rem 0 0 0; color: #666;">{{ reviews|length }} reviews</p>
+                        </div>
+                        
+                        <div>
+                            {% for rating in "54321"|add:""  %}
+                                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                    <span style="width: 30px;">{{ rating }}★</span>
+                                    <div style="background: #e5e7eb; height: 8px; flex: 1; border-radius: 4px; overflow: hidden;">
+                                        {% widthratio rating_breakdown|get:rating|default:0 reviews|length 100 as width_percent %}
+                                        <div style="background: #667eea; height: 100%; width: {{ width_percent }}%;"></div>
+                                    </div>
+                                    <span>({{ rating_breakdown|get:rating|default:0 }})</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- INDIVIDUAL REVIEWS -->
+                <div style="max-height: 600px; overflow-y: auto;">
+                    {% for review in reviews %}
+                        <div style="padding: 1rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <div>
+                                    <strong>{{ review.customer.username }}</strong>
+                                    <div class="stars" style="font-size: 0.9rem;">
+                                        {% for i in "12345" %}
+                                            <span class="star {% if i|add:0 <= review.rating %}filled{% endif %}">★</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <span style="color: #999; font-size: 0.9rem;">{{ review.created_at|timesince }} ago</span>
+                            </div>
+                            <p style="margin: 0; line-height: 1.5;">{{ review.comment }}</p>
+                            {% if review.photo %}
+                                <img src="{{ review.photo.url }}" alt="Review photo" style="margin-top: 0.5rem; width: 100px; height: 100px; object-fit: cover; border-radius: 0.25rem; cursor: pointer;">
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="muted-text">No reviews yet. Be the first to share your experience!</p>
+                    {% endfor %}
+                </div>
+
+                <!-- LEAVE REVIEW FORM -->
+                {% if user.is_authenticated %}
+                    <div style="margin-top: 2rem; padding: 1.5rem; background: #f9fafb; border-radius: 0.5rem;">
+                        <h4>Leave a Review</h4>
+                        <form method="post" enctype="multipart/form-data" action="{% url 'reviews:vendor_reviews' vendor.id %}">
+                            {% csrf_token %}
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Rating *</label>
+                                <select name="rating" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.25rem;">
+                                    <option value="">Select rating</option>
+                                    <option value="5">5★ Excellent</option>
+                                    <option value="4">4★ Very Good</option>
+                                    <option value="3">3★ Good</option>
+                                    <option value="2">2★ Fair</option>
+                                    <option value="1">1★ Poor</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Comment</label>
+                                <textarea name="comment" placeholder="Share your experience..." style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 0.25rem; min-height: 100px; font-family: inherit;"></textarea>
+                            </div>
+                            <div style="margin-bottom: 1rem;">
+                                <label style="display: block; margin-bottom: 0.5rem;">Photo (optional)</label>
+                                <input type="file" name="photo" accept="image/*" style="display: block;">
+                            </div>
+                            <button type="submit" class="btn-primary">Submit Review</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <p class="muted-text"><a href="{% url 'accounts:login' %}">Log in</a> to leave a review.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div>
+            <!-- WORKING HOURS -->
+            <div class="dashboard-card">
+                <h3>Working Hours</h3>
+                {% if vendor.working_hours %}
+                    <table style="width: 100%; font-size: 0.9rem;">
+                        <tbody>
+                            {% for day, hours in vendor.working_hours.items %}
+                                <tr style="{% if forloop.counter0 == today_index %}background: #f0f9ff;{% endif %}">
+                                    <td style="padding: 0.5rem 0;">{{ day }}</td>
+                                    <td style="padding: 0.5rem 0; text-align: right; color: #666;">{{ hours.open }} - {{ hours.close }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="muted-text">Hours not available</p>
+                {% endif %}
+            </div>
+
+            <!-- LOCATION MAP -->
+            {% if vendor.latitude and vendor.longitude %}
+                <div class="dashboard-card" style="margin-top: 1rem;">
+                    <h3>Location</h3>
+                    <div id="detail-map" style="height: 300px; border-radius: 0.5rem; overflow: hidden; margin-bottom: 1rem;"></div>
+                    <p style="margin: 0; color: #666; font-size: 0.9rem;">{{ vendor.address }}</p>
+                </div>
+            {% endif %}
+
+            <!-- QR CODE -->
+            <div class="dashboard-card" style="margin-top: 1rem;">
+                <h3>QR Code</h3>
+                <div style="text-align: center;">
+                    <img src="{% url 'vendors:vendor_qr' vendor.id %}" alt="QR Code" style="width: 150px; height: 150px; margin-bottom: 1rem;">
+                    <a href="{% url 'vendors:vendor_qr' vendor.id %}" download class="btn-outline" style="display: block;">⬇️ Download QR</a>
+                </div>
+            </div>
+
+            <!-- PEOPLE ALSO VIEWED -->
+            {% if people_also_viewed %}
+                <div class="dashboard-card" style="margin-top: 1rem;">
+                    <h3>People Also Viewed</h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        {% for related in people_also_viewed %}
+                            <a href="{% url 'vendors:vendor_detail_page' related.id %}" style="padding: 0.5rem; background: #f9fafb; border-radius: 0.25rem; text-decoration: none; color: inherit; transition: all 0.2s;" onmouseover="this.style.background='#f0f0f0'" onmouseout="this.style.background='#f9fafb'">
+                                <strong>{{ related.name }}</strong>
+                                {% if related.category %}
+                                    <p style="margin: 0; font-size: 0.85rem; color: #666;">{{ related.category.name }}</p>
+                                {% endif %}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Map initialization with dark CartoDB tiles
+    const mapElement = document.getElementById('vendor-detail-map');
+    if (mapElement && typeof L !== 'undefined') {
+        const lat = {{ vendor.latitude }};
+        const lon = {{ vendor.longitude }};
+        const map = L.map('vendor-detail-map').setView([lat, lon], 15);
+        
+        // Dark CartoDB tiles
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap © CARTO',
+            maxZoom: 19,
+            subdomains: 'abcd'
+        }).addTo(map);
+        
+        // Custom vendor marker
+        const customIcon = L.divIcon({
+            html: `<div style="background:#6366f1;width:40px;height:40px;border-radius:50%;border:3px solid white;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(0,0,0,0.4);">📍</div>`,
+            className: '',
+            iconSize: [40, 40],
+            iconAnchor: [20, 20]
+        });
+        
+        L.marker([lat, lon], { icon: customIcon }).addTo(map).bindPopup(`<strong>{{ vendor.name }}</strong><br>{{ vendor.address }}`);
+    }
+    
+    // Share button
+    const shareBtn = document.getElementById('share-button');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', function() {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link copied to clipboard!');
+        });
+    }
+});
+</script>
+
+{% endblock %}
+

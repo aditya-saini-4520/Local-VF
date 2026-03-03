@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+
+{% block title %}Find any shop. Anywhere. Instantly.{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<section class="hero fade-in">
+    <div class="hero-bg" id="hero-particles"></div>
+    <div class="hero-inner">
+        <div class="hero-copy">
+            <h1 class="hero-title">
+                <span class="hero-typewriter" data-text="Find any shop. Anywhere. Instantly."></span>
+            </h1>
+            <p class="hero-subtitle">
+                Discover verified local vendors, services, and shops around you in seconds.
+            </p>
+            <!-- HERO SEARCH BAR -->
+            <div class="hero-search" style="margin:2rem 0;display:flex;gap:0.75rem;max-width:600px;">
+                <input type="text" id="hero-search-input" placeholder="Search for plumber, grocery, tutor..." style="flex:1;padding:12px 16px;border:2px solid rgba(99,102,241,0.2);border-radius:8px;font-size:0.95rem;background:rgba(255,255,255,0.95);outline:none;transition:all 0.3s;" onfocus="this.style.borderColor='#6366f1'" onblur="this.style.borderColor='rgba(99,102,241,0.2)'">
+                <button onclick="const q=document.getElementById('hero-search-input').value;if(q)window.location='/vendors/browse/?q='+encodeURIComponent(q)" style="padding:12px 24px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.boxShadow='0 8px 24px rgba(99,102,241,0.4)'" onmouseout="this.style.boxShadow='none'">🔍 Search</button>
+            </div>
+            <div class="hero-actions">
+                <a href="{% url 'vendors:vendor_list_page' %}" class="btn-primary">Explore vendors</a>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'accounts:register' %}" class="btn-ghost">Join as customer or vendor</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="hero-stats">
+            <div class="stat-card slide-up" style="animation-delay: 0.1s;">
+                <span class="stat-label">Vendors</span>
+                <span class="stat-value js-counter" data-count="{{ total_vendors|default:0 }}">0</span>
+            </div>
+            <div class="stat-card slide-up" style="animation-delay: 0.2s;">
+                <span class="stat-label">Customers</span>
+                <span class="stat-value js-counter" data-count="{{ total_customers|default:0 }}">0</span>
+            </div>
+            <div class="stat-card slide-up" style="animation-delay: 0.3s;">
+                <span class="stat-label">Cities</span>
+                <span class="stat-value js-counter" data-count="{{ total_cities|default:0 }}">0</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CITY STATS BAR -->
+<div style="width:100%;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:2rem;text-align:center;font-weight:600;">
+    <div style="display:flex;justify-content:center;gap:3rem;flex-wrap:wrap;align-items:center;">
+        <div>🏪 <span class="js-counter" data-count="{{ total_vendors|default:0 }}">0</span> Vendors</div>
+        <div>🏙️ <span class="js-counter" data-count="{{ total_cities|default:0 }}">0</span> Cities</div>
+        <div>⭐ <span class="js-counter" data-count="{{ total_reviews|default:0 }}">0</span> Reviews</div>
+        <div>👥 <span class="js-counter" data-count="{{ total_customers|default:0 }}">0</span> Customers</div>
+    </div>
+</div>
+
+<!-- VENDORS NEAR YOU (LIVE MAP) -->
+<section class="section fade-in" style="animation-delay: 0.15s;">
+    <div class="section-header">
+        <h2>🗺️ Vendors Near You</h2>
+        <p>See what's open around you right now</p>
+    </div>
+    <div id="home-map" style="width:100%;height:400px;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.15);"></div>
+</section>
+
+<!-- OPEN NOW QUICK SECTION -->
+<section class="section fade-in" style="animation-delay: 0.25s;">
+    <div class="section-header">
+        <h2>🟢 Open Right Now</h2>
+        <p>Vendors currently open near you</p>
+    </div>
+    <div id="open-now-container" style="display:flex;gap:1rem;overflow-x:auto;padding-bottom:1rem;">
+        <div style="display:flex;gap:1rem;min-width:100%;">
+            <div style="flex:1;min-width:280px;padding:1.5rem;background:#f0f0f0;border-radius:12px;text-align:center;animation:pulse 2s infinite;">
+                <p style="margin:0;color:#666;">Loading open vendors...</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURED CATEGORIES SECTION -->
+<section class="section fade-in" style="animation-delay: 0.35s;">
+    <div class="section-header">
+        <h2>Featured Categories</h2>
+        <p>Explore services by category</p>
+    </div>
+    <div class="category-grid">
+        {% for category in categories %}
+            <a href="{% url 'vendors:vendor_list_page' %}?category={{ category.id }}" class="category-card hover-lift">
+                <div class="category-icon">{{ category.icon }}</div>
+                <h3>{{ category.name }}</h3>
+            </a>
+        {% empty %}
+            <p class="muted-text">Categories will appear soon.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- TRENDING VENDORS SECTION -->
+<section class="section fade-in" style="animation-delay: 0.4s;">
+    <div class="section-header">
+        <h2>Trending Vendors</h2>
+        <p>Top-rated shops people love</p>
+    </div>
+    <div class="card-grid">
+        {% for vendor in trending_vendors %}
+            <article class="vendor-card hover-lift" data-lat="{{ vendor.latitude }}" data-lon="{{ vendor.longitude }}">
+                <div class="vendor-card-header">
+                    <h3>{{ vendor.name }}</h3>
+                    {% if vendor.is_open_now %}
+                        <span class="badge badge-open">Open</span>
+                    {% else %}
+                        <span class="badge badge-closed">Closed</span>
+                    {% endif %}
+                </div>
+                
+                {% if vendor.category %}
+                    <span class="vendor-category-badge">{{ vendor.category.icon }} {{ vendor.category.name }}</span>
+                {% endif %}
+                
+                <p class="vendor-card-address">📍 {{ vendor.address|truncatewords:6 }}</p>
+                
+                <!-- Rating -->
+                <div class="vendor-rating">
+                    {% if vendor.avg_rating %}
+                        <div class="stars" data-rating="{{ vendor.avg_rating|floatformat:1 }}">
+                            {% for i in "12345" %}
+                                <span class="star {% if i|add:0 <= vendor.avg_rating %}filled{% endif %}">★</span>
+                            {% endfor %}
+                        </div>
+                        <span class="rating-value">{{ vendor.avg_rating|floatformat:1 }}</span>
+                    {% else %}
+                        <span class="no-rating">No ratings yet</span>
+                    {% endif %}
+                </div>
+                
+                <div class="vendor-card-actions">
+                    <a href="{% url 'vendors:vendor_detail_page' vendor.id %}" class="btn-ghost small">View details</a>
+                    <button class="btn-favourite" data-vendor-id="{{ vendor.id }}" title="Add to favourites">♡</button>
+                </div>
+            </article>
+        {% empty %}
+            <p class="muted-text">No vendors yet. Check back soon!</p>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- TESTIMONIALS SECTION -->
+<section class="section testimonials-section fade-in" style="animation-delay: 0.5s;">
+    <div class="section-header">
+        <h2>What Our Users Say</h2>
+        <p>Real reviews from real customers</p>
+    </div>
+    <div class="testimonials-grid">
+        {% for testimonial in testimonials %}
+            <div class="testimonial-card slide-up" style="animation-delay: {{ forloop.counter|add:4|mul:0.1 }}s;">
+                <div class="testimonial-header">
+                    <div class="testimonial-avatar">{{ testimonial.initials }}</div>
+                    <div class="testimonial-meta">
+                        <p class="testimonial-name">{{ testimonial.name }}</p>
+                        <div class="stars" data-rating="{{ testimonial.rating }}">
+                            {% for i in "12345" %}
+                                <span class="star {% if i|add:0 <= testimonial.rating %}filled{% endif %}">★</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <p class="testimonial-text">"{{ testimonial.text }}"</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- WHY CHOOSE US SECTION -->
+<section class="section why-choose-us fade-in" style="animation-delay: 0.6s;">
+    <div class="section-header">
+        <h2>Why Choose Local VFC?</h2>
+        <p>The trusted platform for local discovery</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card hover-lift">
+            <div class="feature-icon">🎙️</div>
+            <h3>Voice Search</h3>
+            <p>Find vendors hands-free with our voice search feature.</p>
+        </div>
+        <div class="feature-card hover-lift">
+            <div class="feature-icon">✅</div>
+            <h3>Verified Vendors</h3>
+            <p>All vendors are verified to ensure quality and reliability.</p>
+        </div>
+        <div class="feature-card hover-lift">
+            <div class="feature-icon">⭐</div>
+            <h3>Real Reviews</h3>
+            <p>Honest, verified customer reviews to guide your choices.</p>
+        </div>
+        <div class="feature-card hover-lift">
+            <div class="feature-icon">📍</div>
+            <h3>Find Nearby</h3>
+            <p>Discover vendors near you with accurate location tracking.</p>
+        </div>
+    </div>
+</section>
+
+<!-- RECENTLY ADDED VENDORS SECTION -->
+<section class="section fade-in" style="animation-delay: 0.7s;">
+    <div class="section-header">
+        <h2>Recently Added</h2>
+        <p>New vendors joining our platform</p>
+    </div>
+    <div class="recent-vendors-grid">
+        {% for vendor in recently_added %}
+            <article class="vendor-card-compact hover-lift">
+                <div class="new-badge">New</div>
+                <h3>{{ vendor.name }}</h3>
+                {% if vendor.category %}
+                    <span class="vendor-category-badge-small">{{ vendor.category.icon }}</span>
+                {% endif %}
+                <p class="vendor-address-small">{{ vendor.address|truncatewords:4 }}</p>
+                <a href="{% url 'vendors:vendor_detail_page' vendor.id %}" class="btn-link">Learn more →</a>
+            </article>
+        {% empty %}
+            <p class="muted-text">New vendors coming soon!</p>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- CTA SECTION -->
+<section class="section cta-section fade-in" style="animation-delay: 0.8s;">
+    <div class="cta-inner">
+        <div>
+            <h2>Own a shop? Get discovered.</h2>
+            <p>Join Local VFC and reach new customers in your area today.</p>
+        </div>
+        <div class="cta-actions">
+            {% if user.is_authenticated %}
+                <a href="{% url 'vendors:vendor_register' %}" class="btn-primary">Register your shop</a>
+            {% else %}
+                <a href="{% url 'accounts:register' %}" class="btn-primary">Sign up as vendor</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+
+<script>
+// Counter animation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const counters = document.querySelectorAll('.js-counter');
+    counters.forEach(counter => {
+        const target = parseInt(counter.dataset.count);
+        animateCounter(counter, target, 2000);
+    });
+    
+    // Initialize map
+    initHomeMap();
+    
+    // Load open now vendors
+    loadOpenNowVendors();
+});
+
+// Counter animation function
+function animateCounter(element, target, duration) {
+    let current = 0;
+    const increment = target / (duration / 16);
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = target.toFixed(0).toLocaleString();
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current).toLocaleString();
+        }
+    }, 16);
+}
+
+// Home map initialization
+function initHomeMap() {
+    if (!document.getElementById('home-map')) return;
+    
+    const map = L.map('home-map').setView([20, 78], 10);
+    
+    // Dark CartoDB tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        maxZoom: 19,
+        subdomains: 'abcd'
+    }).addTo(map);
+    
+    // Load all vendors and add markers
+    fetch('/vendors/api/search/')
+        .then(r => r.json())
+        .then(vendors => {
+            const categoryColors = {
+                'Plumber': '#ef4444',
+                'Electrician': '#f59e0b',
+                'Grocer': '#10b981',
+                'Tutor': '#3b82f6',
+                'Default': '#6366f1'
+            };
+            
+            const getCategoryColor = (name) => categoryColors[name] || categoryColors.Default;
+            
+            const markers = [];
+            vendors.forEach(v => {
+                if (v.latitude && v.longitude && v.is_open_now) {
+                    const color = getCategoryColor(v.category_name);
+                    const icon = L.divIcon({
+                        html: `<div style="background:${color};width:32px;height:32px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,0.3);">🏪</div>`,
+                        className: '',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16]
+                    });
+                    
+                    const marker = L.marker([v.latitude, v.longitude], { icon })
+                        .bindPopup(`<strong>${v.name}</strong><br>${v.category_name}`);
+                    marker.addTo(map);
+                    markers.push(marker);
+                }
+            });
+            
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds(), { padding: [50, 50] });
+            }
+        });
+}
+
+// Load and display open now vendors
+function loadOpenNowVendors() {
+    fetch('/vendors/api/search/?is_open=1')
+        .then(r => r.json())
+        .then(vendors => {
+            const container = document.getElementById('open-now-container');
+            if (!vendors || vendors.length === 0) {
+                container.innerHTML = '<div style="flex:1;min-width:280px;padding:2rem;background:#f0f0f0;border-radius:12px;text-align:center;"><p style="margin:0;color:#666;">No vendors open right now</p></div>';
+                return;
+            }
+            
+            const cards = vendors.slice(0, 6).map(v => `
+                <a href="/vendors/${v.id}/detail/" style="flex:1;min-width:280px;padding:1.5rem;background:white;border:2px solid rgba(99,102,241,0.1);border-radius:12px;text-decoration:none;color:inherit;transition:all 0.3s;display:block;" onmouseover="this.style.borderColor='#6366f1';this.style.boxShadow='0 4px 12px rgba(99,102,241,0.2)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.1)';this.style.boxShadow='none'">
+                    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:0.5rem;">
+                        <strong style="font-size:1.1rem;">${v.name}</strong>
+                        <span style="background:#10b981;color:white;padding:2px 8px;border-radius:12px;font-size:0.75rem;white-space:nowrap;">🟢 Open</span>
+                    </div>
+                    <small style="color:#666;">${v.category_name || 'Shop'}</small>
+                    <p style="margin:0.5rem 0;color:#6366f1;font-weight:bold;">${v.avg_rating ? v.avg_rating.toFixed(1) : 'N/A'} ⭐</p>
+                </a>
+            `).join('');
+            
+            container.innerHTML = `<div style="display:flex;gap:1rem;min-width:100%;">${cards}</div>`;
+        });
+}
+</script>
+{% endblock %}
+

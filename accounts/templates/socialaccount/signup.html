@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+{% load static %}
+
+{% block title %}Complete Your Profile – Local VFC{% endblock %}
+
+{% block extra_css %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+.signup-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 70px);
+  background: #08080f;
+  padding: 20px;
+}
+
+.signup-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  background: #13131f;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.1);
+  padding: 50px 40px;
+  animation: slideInUp 0.5s ease;
+}
+
+@keyframes slideInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.header h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #6366f1;
+  margin-bottom: 8px;
+}
+
+.header p {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.profile-section {
+  margin-bottom: 25px;
+}
+
+.profile-section label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.input-field {
+  width: 100%;
+  height: 46px;
+  background: #0f0f1c;
+  border: 1.5px solid rgba(99, 102, 241, 0.2);
+  border-radius: 12px;
+  padding: 0 16px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: #0f0f1c;
+}
+
+.input-field::placeholder {
+  color: #374151;
+}
+
+.role-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 25px;
+}
+
+.role-btn {
+  padding: 15px 12px;
+  background: #0f0f1c;
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #64748b;
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.role-btn:hover,
+.role-btn.selected {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.1);
+  color: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.role-btn span:first-child {
+  font-size: 20px;
+}
+
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #fca5a5;
+  font-size: 12px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.btn {
+  flex: 1;
+  height: 46px;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+}
+
+.btn-skip {
+  background: transparent;
+  border: 1.5px solid rgba(99, 102, 241, 0.3);
+  color: #cbd5e1;
+}
+
+.btn-skip:hover {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+  color: #e2e8f0;
+}
+
+.info-box {
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 20px;
+  color: #cbd5e1;
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.info-box strong {
+  color: #6366f1;
+}
+
+@media (max-width: 480px) {
+  .signup-container {
+    padding: 30px 20px;
+  }
+  
+  .header h2 {
+    font-size: 24px;
+  }
+  
+  .role-selector {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="signup-wrapper">
+  <div class="signup-container">
+    <div class="header">
+      <h2>Welcome to Local VFC! 🎉</h2>
+      <p>Almost there! Let's set up your profile</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="error-message">
+        ⚠️ {{ form.non_field_errors.0 }}
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'socialaccount_signup' %}">
+      {% csrf_token %}
+
+      <!-- Username (if required by form) -->
+      {% if form.username %}
+      <div class="profile-section">
+        <label for="id_username">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}
+          <div class="error-message" style="margin-top: 4px;">{{ form.username.errors.0 }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Email (read-only from Google) -->
+      {% if form.email %}
+      <div class="profile-section">
+        <label for="id_email">Email</label>
+        {{ form.email }}
+        <div class="info-box">
+          ✓ Verified from your Google account
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Role Selector -->
+      <div style="margin-bottom: 25px;">
+        <label style="font-size: 12px; font-weight: 600; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: block;">What are you looking for?</label>
+        <div class="role-selector">
+          <button type="button" class="role-btn selected" onclick="selectRole('customer', this)">
+            <span>🛍️</span>
+            <span>Customer</span>
+          </button>
+          <button type="button" class="role-btn" onclick="selectRole('vendor', this)">
+            <span>🏪</span>
+            <span>Vendor</span>
+          </button>
+        </div>
+        <input type="hidden" name="role" id="role-input" value="customer">
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          Complete Signup
+        </button>
+      </div>
+
+      <div class="info-box">
+        You can change your role anytime from your profile settings.
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function selectRole(role, btn) {
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('role-input').value = role;
+}
+
+// Auto-apply proper styling to form inputs
+document.addEventListener('DOMContentLoaded', function() {
+  const inputs = document.querySelectorAll('input[type="text"], input[type="email"]');
+  inputs.forEach(input => {
+    input.className = 'input-field';
+  });
+});
+</script>
+{% endblock %}

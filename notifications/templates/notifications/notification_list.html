@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Local VFC{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;margin:0 auto;padding:40px 20px;">
+    <!-- Header -->
+    <div style="margin-bottom:32px;">
+        <h1 style="color:#ffffff;font-size:32px;font-weight:700;margin:0 0 8px 0;">🔔 Notifications</h1>
+        <p style="color:#64748b;font-size:14px;margin:0;">You have <strong style="color:#a5b4fc;">{{ unread_count }}</strong> unread notification{{ unread_count|pluralize }}</p>
+    </div>
+
+    <!-- Mark All Read Button -->
+    {% if unread_count > 0 %}
+    <div style="margin-bottom:24px;">
+        <button onclick="markAllNotificationsRead()" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:500;font-size:13px;transition:all 0.3s;">
+            ✓ Mark All as Read
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Notifications List -->
+    {% if notifications %}
+        <div style="display:flex;flex-direction:column;gap:12px;">
+            {% for notification in notifications %}
+            <div style="background:#13131f;border:1px solid rgba(99,102,241,{{ notification.is_read|yesno:'0.1,0.25' }});border-radius:12px;padding:20px;display:flex;gap:16px;align-items:flex-start;transition:all 0.3s;{{ notification.is_read|yesno:',:background:rgba(99,102,241,0.08);' }}">
+                <!-- Unread Indicator -->
+                {% if not notification.is_read %}
+                <div style="width:12px;height:12px;border-radius:50%;background:#6366f1;margin-top:6px;flex-shrink:0;"></div>
+                {% else %}
+                <div style="width:12px;height:12px;border-radius:50%;background:rgba(99,102,241,0.3);margin-top:6px;flex-shrink:0;"></div>
+                {% endif %}
+
+                <!-- Content -->
+                <div style="flex:1;min-width:0;">
+                    <p style="color:#e2e8f0;font-size:15px;margin:0 0 8px 0;line-height:1.5;">{{ notification.message }}</p>
+                    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+                        <span style="color:#64748b;font-size:12px;">{{ notification.created_at|date:'M d, Y • H:i' }}</span>
+                    </div>
+                </div>
+
+                <!-- Mark as Read Button -->
+                {% if not notification.is_read %}
+                <button onclick="markNotificationRead({{ notification.id }}, this)" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);color:#a5b4fc;padding:8px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;white-space:nowrap;flex-shrink:0;transition:all 0.3s;" onmouseover="this.style.background='rgba(99,102,241,0.25)'" onmouseout="this.style.background='rgba(99,102,241,0.15)'">
+                    Mark read
+                </button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div style="text-align:center;padding:60px 20px;background:rgba(99,102,241,0.05);border:1px dashed rgba(99,102,241,0.2);border-radius:12px;">
+            <div style="font-size:48px;margin-bottom:16px;">🔔</div>
+            <h2 style="color:#e2e8f0;font-size:18px;font-weight:600;margin:0 0 8px 0;">No notifications yet</h2>
+            <p style="color:#64748b;font-size:14px;margin:0;">When you get notifications, they'll show up here.</p>
+            <a href="/" style="display:inline-block;margin-top:20px;padding:10px 20px;background:#6366f1;color:#fff;text-decoration:none;border-radius:8px;font-weight:500;transition:all 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                Back to Home
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+async function markNotificationRead(notificationId, button) {
+    try {
+        const response = await fetch(`/notifications/${notificationId}/read/`, { 
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        if (response.ok) {
+            // Fade out the notification
+            const notifDiv = button.closest('[style*="background:#13131f"]');
+            notifDiv.style.opacity = '0.5';
+            setTimeout(() => location.reload(), 300);
+        }
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+    }
+}
+
+async function markAllNotificationsRead() {
+    try {
+        const response = await fetch('/notifications/read-all/', { 
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function getCsrfToken() {
+    const name = 'csrftoken=';
+    const parts = document.cookie.split(';');
+    for (let i = 0; i < parts.length; i++) {
+        const c = parts[i].trim();
+        if (c.startsWith(name)) return decodeURIComponent(c.substring(name.length));
+    }
+    return '';
+}
+</script>
+{% endblock %}

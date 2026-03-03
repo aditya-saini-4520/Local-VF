@@ -1,0 +1,15 @@
+{% extends "accounts/login.html" %}
+    const chips = document.querySelectorAll(".role-chip");
+    const input = document.getElementById("role-input");
+    chips.forEach(chip => {
+        chip.addEventListener("click", () => {
+            chips.forEach(c => c.classList.remove("active"));
+            chip.classList.add("active");
+            input.value = chip.dataset.value;
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}
+
